@@ -36,8 +36,40 @@ const loginAdmin = async (req, res) =>{
     }
 } 
 
-const getAdminDashboard = async (req, res)=>{
-    res.status(200).json({message: "Welcome to the Admin Dashboard"});
-}
+
+const getAdminDashboard = async (req, res) => {
+  try {
+    const { date, base, equipment_type } = req.query;
+    
+    const query = `
+      SELECT *
+      FROM assets
+      WHERE ($1::date IS NULL OR date::date = $1::date)
+        AND ($2::text IS NULL OR base = $2::text)
+        AND ($3::text IS NULL OR equipment_type = $3::text)
+    `;
+
+    const values = [
+      date || null,
+      base || null,
+      equipment_type || null
+    ];
+
+    const result = await pool.query(query, values);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error("Error in getAdminDashboard:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching dashboard data",
+      error: error.message
+    });
+  }
+};
 
 module.exports = {loginAdmin, getAdminDashboard}

@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
+import BaseCommanderDashboard from "../pages/BaseCommander/home";
 
-function AdminDashboardLayout() {
+function BaseCommanderDashboardLayout() {
 
   return (
     <div className="bg-[#a18b32] h-screen fixed left-0 w-screen">
@@ -54,4 +55,4 @@ function AdminDashboardLayout() {
   );
 }
 
-export default AdminDashboardLayout;
+export default BaseCommanderDashboardLayout;
