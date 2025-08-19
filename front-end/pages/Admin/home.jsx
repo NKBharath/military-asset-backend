@@ -9,6 +9,8 @@ function AdminDashboard() {
   });
   const [dashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+
 
   const getDashboardData = async () => {
     setLoading(true);
@@ -16,7 +18,6 @@ function AdminDashboard() {
       const data = await getAdminDashboard(filters);
       if (data?.success) {
         setDashboardData(data.data);
-        console.log("Dashboard data fetched successfully:", data.data);
       } else {
         console.error("Error fetching dashboard data:", data?.message);
       }

@@ -1,140 +1,139 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAssetData, getBaseData } from "../../controller/AdminDashboardController";
 import { addAdminAsset } from "../../controller/AdminDashboardController";
-
+import { getTransactions } from "../../controller/AdminPurchase";
 const AdminPurchases = () => {
-  const assetOptions = ["Rifle A1", "Jeep X2", "Radio R5", "Truck T9", "Drone D2"];
+  const [basesData, setBasesData] = useState([]);
+  const [base, setBase] = useState(null);
+  const [assetsData, setAssetsData] = useState([]);
+  const [asset, setAsset] = useState(null);
+  const [quantity, setQuantity] = useState();
+  const [message, setMessage] = useState("");
+  const [transactionData, setTransactionData] = useState([]);
+  useEffect(()=>{
+      const fetchAssetData = async () => {
+        const data = await getAssetData();
+        if (data?.success) {
+          setAssetsData(data.data);
+        } else {
+          console.error("Error fetching assets data:", data?.message);
+        }
+      };
+  
+      fetchAssetData();
+    }, [])
+  
+    useEffect(()=>{
+      const fetchBaseData = async () => {
+        const data = await getBaseData();
+        if(data?.success){
+          setBasesData(data.data);
+        } else {
+          console.error("Error fetching base data:", data?.message);
+        }
+      };
+  
+      fetchBaseData();
+    }, []);
+  
+    const handlesubmit = async(data)=>{
+      data.preventDefault();
 
-  // Base names should match your actual table prefixes
-  const baseOptions = [
-    { id: "alpha", name: "Base Alpha" },
-    { id: "bravo", name: "Base Bravo" },
-    { id: "charlie", name: "Base Charlie" },
-  ];
-
-  const equipmentTypes = ["Vehicle", "Weapon", "Communication"];
-
-  const [formData, setFormData] = useState({
-    asset_name: "",
-    base: "",              // base string (alpha/bravo/charlie)
-    equipment_type: "",
-    action: "purchase",    // always purchase here
-    status: "available",   // default
-    quantity: 1,
-    date: "",
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: name === "quantity" ? parseInt(value) : value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const result = await addAdminAsset(formData); // backend decides table
-      if (result?.success) {
-        alert("Asset added successfully");
-        setFormData({
-          asset_name: "",
-          base: "",
-          equipment_type: "",
-          action: "purchase",
-          status: "available",
-          quantity: 1,
-          date: "",
-        });
-      } else {
-        alert(result?.message || "Error adding asset");
+      if(!asset || !base || !quantity){
+        setMessage("Kindly fill all the fields");
+          return;
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error adding asset");
+      const formdata = {
+        asset_id: asset,
+        base_id: base,
+        quantity: quantity,
+        status: "purchase"
+      }
+      try{
+        const response = await addAdminAsset(formdata);
+        if(response?.success){
+          alert("Asset added successfully");
+          //need to set after checkauth completed window.location.reload();
+          setAsset(null);
+          setBase(null);
+          setQuantity(null);
+          setMessage("");
+        } else{
+          console.error("Error adding asset:", response?.message);
+        }
+      } catch(error){
+        console.error("Error adding asset:", error);
+      }
     }
-  };
 
+    useEffect(()=>{
+      const fetchTransactionData = async () =>{
+        const data = await getTransactions();
+        if(data?.success){
+          setTransactionData(data.data);
+          console.log("Transaction Data:", data.data);
+        } else {
+          console.error("Error fetching transactions:", data?.message);
+        }
+      }
+      fetchTransactionData();
+    }, []);
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 ">
       <h2 className="text-xl font-bold mb-4">Add Asset</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Asset Selection */}
-        <select
-          name="asset_name"
-          value={formData.asset_name}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        >
-          <option value="">Select Asset</option>
-          {assetOptions.map((asset) => (
-            <option key={asset} value={asset}>
-              {asset}
+      {message && <p className="text-red-500">{message}</p>}
+      <form  onSubmit={handlesubmit} className="space-x-5 bg-[#D7D176] rounded p-4">
+        <select value={asset} onChange={(e)=>setAsset(e.target.value) } required
+          className="bg-[#ffffff] p-2 font-bold rounded ">
+          <option value=""> Select Item</option>
+          {assetsData?.map(asset=>(
+            <option key={asset.asset_id} value={asset.asset_id}>
+              {asset.asset_name}
             </option>
           ))}
         </select>
-
-        {/* Base Selection */}
-        <select
-          name="base"
-          value={formData.base}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        >
+        <select value={base} onChange={(e)=> setBase(e.target.value)} required
+          className="bg-[#ffffff] p-2 font-bold rounded ">
           <option value="">Select Base</option>
-          {baseOptions.map((base) => (
-            <option key={base.id} value={base.id}>
-              {base.name}
+          {basesData?.map(base=>(
+            <option key={base.base_id} value={base.base_id}>
+              {base.base_name}
             </option>
           ))}
         </select>
-
-        {/* Equipment Type */}
-        <select
-          name="equipment_type"
-          value={formData.equipment_type}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        >
-          <option value="">Select Type</option>
-          {equipmentTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-
-        {/* Quantity */}
-        <input
-          type="number"
-          name="quantity"
-          value={formData.quantity}
-          onChange={handleChange}
-          min="1"
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        {/* Date */}
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          Add Asset
-        </button>
+         <input type="number" min="1" placeholder="Quantity" required 
+          className="bg-[#ffffff] p-2 font-bold rounded w-24"
+          value={quantity} onChange={(e)=> setQuantity(e.target.value)} />
+         <button className="bg-[#ffffff] p-2 font-bold rounded "
+         type="submit">Add Item</button>
       </form>
+      <table className="w-full mt-6  rounded border-gray-400">
+        <thead className="bg-gray-300">
+          <th className="border p-2">Transaction ID</th>
+          <th className="border p-2">Item</th>
+          <th className="border p-2">Base</th>
+          <th className="border p-2">Quantity</th>
+          <th className="border p-2">Status</th>
+          <th className="border p-2">Date</th>
+        </thead>
+        <tbody className="bg-white">
+          {transactionData?.map((data) => {
+
+            const asset_name = assetsData.find((a)=> a.asset_id === data.asset_id);
+            const base_name = basesData.find((b)=> b.base_id === data.base_id);
+            return(
+            <tr key={data.transaction_id}>
+              <td className="border p-2">{data.transaction_id}</td>
+              <td className="border p-2">{asset_name ? asset_name.asset_name : data.asset_id}</td>
+              <td className="border p-2">{base_name ? base_name.base_name : data.base_id}</td>
+              <td className="border p-2">{data.quantity}</td>
+              <td className="border p-2">{data.status}</td>
+              <td className="border p-2">{data.date}</td>
+            </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

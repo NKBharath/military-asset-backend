@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../../config/db");
 const jwt = require('jsonwebtoken');
-const e = require("express");
+const { AssetStorageTrigger } = require("../Common-Service/service");
 
 const generatetoken = (id) =>{
     return jwt.sign({id: id, role: "admin"}, "secret123", {expiresIn: "1h"});
@@ -47,7 +47,7 @@ const getAdminDashboard = async (req, res) => {
         console.error("DB Error", error);
         return res.status(500).json({ message: "Internal Server Error" });
       }
-      res.json({
+      return res.json({
         success: true,
         data: result,
       });
@@ -63,66 +63,102 @@ const getAdminDashboard = async (req, res) => {
   }
 };
 
-
-
-
-
-const setAdminAssets = async (req, res) => {
-  try {
-    const { asset_name, equipment_type, base_id, quantity, date, action, } = req.body;
-
-    // 1. Check if asset exists
-    const assetCheckQuery = `
-      SELECT * FROM assets 
-      WHERE asset_name = $1 AND base_id = $2 AND category = $3
-    `;
-    const assetCheckValues = [asset_name, base_id, equipment_type];
-    let assetResult = await pool.query(assetCheckQuery, assetCheckValues);
-
-    let assetId;
-    if (assetResult.rows.length === 0) {
-      // Insert new asset
-      const insertAssetQuery = `
-        INSERT INTO assets (asset_name, base_id, category)
-        VALUES ($1, $2, $3)
-        RETURNING asset_id
-      `;
-      const insertAssetValues = [asset_name, base_id, equipment_type];
-      const newAsset = await pool.query(insertAssetQuery, insertAssetValues);
-      assetId = newAsset.rows[0].asset_id;
-    } else {
-      assetId = assetResult.rows[0].asset_id;
-    }
-
-    // 2. Insert into transactions
-    const insertTransactionQuery = `
-      INSERT INTO transactions (asset_id, action, quantity, transaction_date)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
-    const insertTransactionValues = [assetId, action, quantity, date];
-    const transactionResult = await pool.query(insertTransactionQuery, insertTransactionValues);
-
-    res.status(201).json({
-      success: true,
-      message: "Asset & Transaction stored successfully",
-      asset_id: assetId,
-      transaction: transactionResult.rows[0]
-    });
-
-  } catch (error) {
-    console.error("Error in setAdminAssets:", error);
-    res.status(500).json({
+const getAssetsData = async(req, res) => {
+  try{
+    const sql = "SELECT * FROM assets";
+    db.all(sql,(error, assets)=>{
+      if(error){
+        console.error("DB Error", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
+      return res.json({
+        success: true,
+        data: assets,
+        message: "Assets Data fetched successfully"
+      });
+    })
+  } catch(error) {
+    console.error("Error in getAssetsData: backend", error);
+    return res.status(500).json({
       success: false,
-      message: "Error adding asset and transaction",
+      message: "Error fetching assets data backend",
       error: error.message
     });
   }
+}
+
+const getBaseData = async (req, res) => {
+  try {
+    const sql = "SELECT * FROM bases";
+    db.all(sql, (error, bases) => {
+      if (error) {
+        console.error("DB Error", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
+      return res.json({
+        success: true,
+        data: bases,
+        message: "Bases Data fetched successfully"
+      });
+    });
+  } catch (error) {
+    console.error("Error in getBaseData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching base data",
+      error: error.message
+    });
+  }
+}
+
+const setAdminAssets = async (req, res) => {
+  try {
+    const { asset_id, base_id, quantity, status } = req.body;
+    const sql = `INSERT INTO transactions (asset_id, base_id, quantity, status) VALUES (? , ?, ?, ?);`
+    const params = [asset_id, base_id, quantity, status];
+    db.run(sql, params, (error)=>{
+      if(error){
+        console.error("DB Error", error);
+        return res.status(500).json({message: "Internal Server Error"});
+      } else{
+        AssetStorageTrigger(asset_id, base_id, quantity, status);
+      }
+      return res.status(201).json({message: "Asset added successfully", success: true});
+    })
+  }catch(error){
+    console.error("Error adding asset:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error adding asset",
+      error: error.message
+    });
+  }  
 };
 
-// controllers/transferController.js
+const fetchTransactions = async (req, res) =>{
+  try{
+    const sql = `SELECT * FROM transactions`;
+    db.all(sql, (error, row)=>{
+      if(error){
+        console.log("DB Error", error);
+        return res.status(500).json({ message: "Internal Server Error" });
 
-// Transfer Asset between bases
+      }
+      res.status(200).json({
+        success: true,
+        data: row,
+        message: "Transactions fetched successfully"
+      })
+    })
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching transactions",
+      error: error.message
+    });
+  }
+}
 const transferAsset = async (req, res) => {
   try {
     const { asset_id, from_base_id, to_base_id, quantity } = req.body;
@@ -205,4 +241,4 @@ const transferAsset = async (req, res) => {
 
 
 
-module.exports = {loginAdmin, getAdminDashboard, setAdminAssets, transferAsset}
+module.exports = {loginAdmin, getAdminDashboard, getAssetsData, getBaseData, setAdminAssets, fetchTransactions, transferAsset}

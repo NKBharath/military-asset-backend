@@ -35,6 +35,7 @@ create table if not exists transactions(
     base_id integer not null,
     quantity integer not null,
     status text check(status in ('purchase', 'transfer-in', 'transfer-out')),
+    date timestamp default current_timestamp,
     foreign key( asset_id) references assets(asset_id),
     foreign key( base_id) references bases(base_id)
 );

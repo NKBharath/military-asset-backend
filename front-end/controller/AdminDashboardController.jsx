@@ -18,12 +18,29 @@ export const getAdminDashboard = async(filters = {}) => {
   
 }
 
+export const getAssetData = async()=>{
+  try{
+    const data = await API.get("/admin/assetsdata");
+    return data.data;
+  }catch(error){
+    console.error("Error fetching assets data: controller", error);
+  }
+}
+
+export const getBaseData = async () => {
+  try {
+    const data = await API.get("/admin/basesdata");
+    return data.data;
+  } catch (error) {
+    console.error("Error fetching base data: controller", error);
+  }
+};
+
 export const addAdminAsset = async (assetData) => {
   try {
-    const { data } = await API.post("/admin/assets", assetData);
+    const { data } = await API.post("/admin/storeassets", assetData);
     return data;
   } catch (error) {
     console.error("Error adding admin asset:", error);
-    return { success: false, message: "Error adding asset" };
   }
 };
