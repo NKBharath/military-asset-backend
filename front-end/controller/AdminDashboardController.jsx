@@ -2,12 +2,11 @@ import API from "../common/axiosInstance";
 
 
 export const getAdminDashboard = async(filters = {}) => {
-  const{start_date, end_date, base, equipment_type} = filters;
+  const{date, base_id, equipment_type} = filters;
 
   const params ={};
-  if(start_date) params.start_date = start_date;
-  if(end_date) params.end_date = end_date;
-  if(base) params.base = base;
+  if(date) params.date = date;
+  if(base_id) params.base_id = base_id;
   if(equipment_type) params.equipment_type = equipment_type;
 
   try{
@@ -18,3 +17,13 @@ export const getAdminDashboard = async(filters = {}) => {
   }
   
 }
+
+export const addAdminAsset = async (assetData) => {
+  try {
+    const { data } = await API.post("/admin/assets", assetData);
+    return data;
+  } catch (error) {
+    console.error("Error adding admin asset:", error);
+    return { success: false, message: "Error adding asset" };
+  }
+};

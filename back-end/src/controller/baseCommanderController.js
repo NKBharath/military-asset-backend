@@ -1,5 +1,5 @@
 const { compare } = require('bcrypt');
-const pool = require('../config/database');
+const db = require('../../config/db');
 const jwt = require('jsonwebtoken');
 
 const generatetoken = (id) =>{
@@ -8,55 +8,71 @@ const generatetoken = (id) =>{
 
 const loginBaseCommander = async (req, res) =>{
     try{
-        const { username, password} = req.body;
-        const result = await pool.query("SELECT * FROM base_commander WHERE username = $1", [username]);
-        if(result.rows.length === 0){
-            return res.status(400).json({message: "No data found"});
+      const {username, password} = req.body;
+      const sql = "SELECT * FROM users WHERE username = ? AND role = 'base_commander'";
+      db.get(sql, [username], async(error, user)=>{
+        if(error){
+          console.error("DB Error", error);
+          return res.status(500).json({message: "Internal Server Error"});
         }
-        const baseCommander = result.rows[0];
+      })
+      if(!user) return res.status(400).json({message: "No data found"});
 
-        const isMatch = await compare(password, baseCommander.password);
-        if(!isMatch){
-            return res.status(400).json({message: "Invalid Credentials"});
+      const isMatch = await compare(password, user.password);
+      if(!isMatch) return res.status(400).json({message: "Invalid Credentials"});
+      const token = generatetoken(user.user_id);
+      return res.status(200).json({
+        success: true,
+        message: "login successful",
+        token: token,
+        user: {
+          id: user.user_id,
+          username: user.username,
+          role: user.role
         }
-        const token = generatetoken(baseCommander.id);
-        res.status(200).json({
-            success: true,
-            message: "login sucessfull",
-            token,
-            user: {
-                id: baseCommander.id,
-                base: baseCommander.base,
-                role: "base_commander",
-                username: baseCommander.username,
-            }
-        });
-    } catch(error){
-        console.error("Error logging in base commander:", error);
-        res.status(500).json({message: "Internal Server Error"});
+      })
+    }catch(error){
+      console.error("Error logging in base commander:", error);
+      res.status(500).json({message: "Internal Server Error"});
     }
 }
 const getBaseCommanderDashboard = async (req, res) => {
   try {
     const { date, equipment_type } = req.query;
 
+    const commanderBase = req.header.base; // this comes from JWT decoded middleware
+    console.log("Commander Base:", commanderBase);
+    // Map commander base to the correct transactions table
+    let tableName;
+    switch (commanderBase) {
+      case "alpha":
+        tableName = "alpha_transactions";
+        break;
+      case "Bravo":
+        tableName = "bravo_transactions";
+        break;
+      case "Charlie":
+        tableName = "charlie_transactions";
+        break;
+      default:
+        return res.status(400).json({ success: false, message: "Invalid base" });
+    }
+
+    // Build query dynamically
     const query = `
       SELECT *
-      FROM assets
-      WHERE ($1::date IS NULL OR date::date = $1::date)
-        AND (base IS NULL OR base = 'Base Alpha')
-        AND ($2::text IS NULL OR equipment_type = $2::text)
+      FROM ${tableName}
+      WHERE ($1::date IS NULL OR transaction_date::date = $1::date)
+        AND ($2::text IS NULL OR category = $2::text)
+      ORDER BY transaction_date DESC
     `;
 
-    const values = [
-      date || null,
-      equipment_type || null
-    ];
-
+    const values = [date || null, equipment_type || null];
     const result = await pool.query(query, values);
 
     res.json({
       success: true,
+      base: commanderBase,
       data: result.rows
     });
 
@@ -69,4 +85,5 @@ const getBaseCommanderDashboard = async (req, res) => {
     });
   }
 };
+
 module.exports = { loginBaseCommander, getBaseCommanderDashboard };

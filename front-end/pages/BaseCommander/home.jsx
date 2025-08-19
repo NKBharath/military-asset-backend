@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { getBaseCommanderDashboard } from "../../controller/BaseCommanderDashboard";
+import { useSelector } from "react-redux";
 
 function BaseCommanderDashboard() {
   const [filters, setFilters] = useState({
-    date: "",
-    equipment_type: "",
+    transaction_date: "",
+    category: "",
   });
   const [DashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const { user } = useSelector((state) => state.auth);
+  console.log("User Base:", user.base);
   const getDashboardData = async () => {
     setLoading(true);
     try {
-      const data = await getBaseCommanderDashboard(filters);
+      const data = await getBaseCommanderDashboard(filters,user.base);
       console.log("Fetched Dashboard Data:", data.data);
       if (data?.success) {
-        setDashboardData(data.data); 
+        setDashboardData(data.data);
         console.log("Dashboard data fetched successfully");
       } else {
         console.error("Error fetching dashboard data:", data?.message);
@@ -35,38 +37,40 @@ function BaseCommanderDashboard() {
     setFilters({ ...filters, [event.target.name]: event.target.value });
   };
 
+  // Stats
   const totalAssets = DashboardData.length;
-  const purchases = DashboardData.filter(a => a.action === "purchase").length;
-  const transferIn = DashboardData.filter(a => a.action === "transfer_in").length;
-  const transferOut = DashboardData.filter(a => a.action === "transfer_out").length;
+  const purchases = DashboardData.filter((a) => a.action === "purchase").length;
+  const transferIn = DashboardData.filter((a) => a.action === "transfer_in").length;
+  const transferOut = DashboardData.filter((a) => a.action === "transfer_out").length;
   const netMovement = purchases + transferIn - transferOut;
-  const assignedAssets = DashboardData.filter(a => a.status === "assigned").length;
-  const expendedAssets = DashboardData.filter(a => a.status === "expended").length;
+  const assignedAssets = DashboardData.filter((a) => a.status === "assigned").length;
+  const expendedAssets = DashboardData.filter((a) => a.status === "expended").length;
 
   return (
     <div className="p-6 space-y-6 bg-[#D7D176]">
+      {/* Filters */}
       <div className="flex flex-wrap gap-4 p-4 rounded-lg">
         <div className="flex gap-3 items-center">
-          <label className="block font-semibold mb-1">Start Date:</label>
+          <label className="block font-semibold mb-1">Date:</label>
           <input
             type="date"
-            name="date"
-            value={filters.date}
+            name="transaction_date"
+            value={filters.transaction_date}
             onChange={handleChange}
             className="border-2 border-black p-2 rounded w-40"
           />
         </div>
-        
+
         <select
-          name="equipment_type"
-          value={filters.equipment_type}
+          name="category"
+          value={filters.category}
           onChange={handleChange}
           className="border-2 border-black p-2 rounded w-40"
         >
           <option value="">Equipment Type</option>
-          <option>Weapon</option>
-          <option>Vehicle</option>
-          <option>Communication</option>
+          <option value="Weapon">Weapon</option>
+          <option value="Vehicle">Vehicle</option>
+          <option value="Communication">Communication</option>
         </select>
 
         <button
@@ -77,6 +81,7 @@ function BaseCommanderDashboard() {
         </button>
       </div>
 
+      {/* Dashboard Data */}
       {loading ? (
         <p className="mt-4">Loading...</p>
       ) : totalAssets > 0 ? (

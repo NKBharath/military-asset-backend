@@ -11,6 +11,8 @@ import AdminTransfers from "../pages/Admin/Transfers";
 import BaseCommanderLogin from "../pages/BaseCommander/Base-commander-loign";
 import BaseCommanderDashboardLayout from "../layout/BaseCommanderDashboardLayout";
 import BaseCommanderDashboard from "../pages/BaseCommander/home";
+import BaseCommanderPurchases from "../pages/BaseCommander/Purchases";
+import BaseCommanderTransfers from "../pages/BaseCommander/Transfers";
 function App() {
   const {user, isAuthenticated} = useSelector((state) => state.auth);
  
@@ -34,6 +36,8 @@ function App() {
             <BaseCommanderDashboardLayout/>
           </CheckAuth>}>
             <Route path="home" element={<BaseCommanderDashboard />} />
+            <Route path="purchases" element={<BaseCommanderPurchases />} />
+            <Route path="transfers" element={<BaseCommanderTransfers />} />
       </Route>
     </Routes>
   )
