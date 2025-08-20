@@ -10,6 +10,11 @@ const AdminPurchases = () => {
   const [quantity, setQuantity] = useState();
   const [message, setMessage] = useState("");
   const [transactionData, setTransactionData] = useState([]);
+  const [filters, setFilters] = useState({
+    base_id: "",
+    asset_id: "",
+    date: "",
+  });
   useEffect(()=>{
       const fetchAssetData = async () => {
         const data = await getAssetData();
@@ -68,16 +73,22 @@ const AdminPurchases = () => {
 
     useEffect(()=>{
       const fetchTransactionData = async () =>{
-        const data = await getTransactions();
+        const params = {
+          base_id: filters.base_id,
+          asset_id: filters.asset_id,
+          date: filters.date
+        }
+        const data = await getTransactions(params);
         if(data?.success){
           setTransactionData(data.data);
+
           console.log("Transaction Data:", data.data);
         } else {
           console.error("Error fetching transactions:", data?.message);
         }
       }
       fetchTransactionData();
-    }, []);
+    }, [filters]);
   return (
     <div className="p-6 ">
       <h2 className="text-xl font-bold mb-4">Add Asset</h2>
@@ -107,6 +118,32 @@ const AdminPurchases = () => {
          <button className="bg-[#ffffff] p-2 font-bold rounded "
          type="submit">Add Item</button>
       </form>
+      <div className="mt-6 bg-[#D7D176] p-4 rounded space-x-5">
+          <select value={filters.base_id} className="bg-[#ffffff] p-2 font-bold rounded "
+          onChange={(e)=> setFilters({...filters, base_id: e.target.value})}>
+        <option value="">Select Base</option>
+        {basesData?.map(base=>(
+          <option key={base.base_id} value={base.base_id}>
+            {base.base_name}
+          </option>
+        ))}
+      </select>
+
+        <select value={filters.asset_id} className="bg-[#ffffff] p-2 font-bold rounded "
+        onChange={(e)=> setFilters({...filters, asset_id:e.target.value})}>
+          <option value="">Select Assets</option>
+          {assetsData?.map(asset=>(
+            <option key={asset.asset_id} value={asset.asset_id}>
+              {asset.asset_name}
+            </option>
+          ))}
+        </select>
+
+        <input type="date" value={filters.date} className="bg-[#ffffff] p-2 font-bold rounded "
+        onChange={(e)=> setFilters({...filters, date:e.target.value})} />
+      </div>
+      
+
       <table className="w-full mt-6  rounded border-gray-400">
         <thead className="bg-gray-300">
           <th className="border p-2">Transaction ID</th>

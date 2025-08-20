@@ -137,8 +137,12 @@ const setAdminAssets = async (req, res) => {
 
 const fetchTransactions = async (req, res) =>{
   try{
-    const sql = `SELECT * FROM transactions`;
-    db.all(sql, (error, row)=>{
+    let {base_id, asset_id, date} = req.query;
+    base_id = base_id || null;
+    asset_id = asset_id || null;
+    date = date ? `${date}%` : null;
+    const sql = `SELECT * FROM transactions WHERE (? is NULL OR base_id = ?) AND (? is NULL OR asset_id = ?) AND (? is NULL OR date LIKE ?)`;
+    db.all(sql, [base_id, base_id, asset_id, asset_id, date, date], (error, row)=>{
       if(error){
         console.log("DB Error", error);
         return res.status(500).json({ message: "Internal Server Error" });
