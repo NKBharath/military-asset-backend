@@ -85,72 +85,111 @@ function BaseCommanderPurchases() {
       fetchTransactionData();
     }, [filters]);
   return (
-    <div className="p-6 ml-35 ">
-      <h2 className="text-xl font-bold mb-4">Add Asset</h2>
-      {message && <p className="text-red-500">{message}</p>}
-      <form  onSubmit={handlesubmit} className="space-x-5 bg-[#D7D176] rounded p-4">
-        <select value={asset} onChange={(e)=>setAsset(e.target.value) } required
-          className="bg-[#ffffff] p-2 font-bold rounded ">
-          <option value=""> Select Item</option>
-          {assetsData?.map(asset=>(
-            <option key={asset.asset_id} value={asset.asset_id}>
-              {asset.asset_name}
-            </option>
-          ))}
-        </select>
-         <input type="number" min="1" placeholder="Quantity" required 
-          className="bg-[#ffffff] p-2 font-bold rounded w-24"
-          value={quantity} onChange={(e)=> setQuantity(e.target.value)} />
-         <button className="bg-[#ffffff] p-2 font-bold rounded "
-         type="submit">Add Item</button>
-      </form>
+  <div className="min-h-screen w-full p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12">
+    <h2 className="text-[#F1F2F4] text-2xl sm:text-3xl lg:text-4xl font-semibold border-l-4 rounded border-[#008000] mb-4 pl-2">
+      Add Asset
+    </h2>
 
+    {message && <p className="text-red-500">{message}</p>}
 
-      
-      <div className="mt-6 bg-[#D7D176] p-4 rounded space-x-5">
-          
+    <form
+      onSubmit={handlesubmit}
+      className="bg-[rgb(30,34,41)] p-4 sm:p-6 rounded flex flex-col md:flex-row gap-4 border border-gray-600 w-full md:w-2/3 "
+    >
+      <select
+        value={asset}
+        onChange={(e) => setAsset(e.target.value)}
+        required
+        className="bg-[#0F1319] text-[#F1F2F4] p-3 rounded shadow-md w-full"
+      >
+        <option value="">Select Item</option>
+        {assetsData?.map((asset) => (
+          <option key={asset.asset_id} value={asset.asset_id}>
+            {asset.asset_name}
+          </option>
+        ))}
+      </select>
 
-        <select value={filters.asset_id} className="bg-[#ffffff] p-2 font-bold rounded "
-        onChange={(e)=> setFilters({...filters, asset_id:e.target.value})}>
-          <option value="">Select Assets</option>
-          {assetsData?.map(asset=>(
-            <option key={asset.asset_id} value={asset.asset_id}>
-              {asset.asset_name}
-            </option>
-          ))}
-        </select>
+      <input
+        type="number"
+        min="1"
+        placeholder="Quantity"
+        required
+        className="bg-[#0F1319] text-[#F1F2F4] p-3 rounded shadow-md w-full md:w-32"
+        value={quantity}
+        onChange={(e) => setQuantity(e.target.value)}
+      />
 
-        <input type="date" value={filters.date} className="bg-[#ffffff] p-2 font-bold rounded "
-        onChange={(e)=> setFilters({...filters, date:e.target.value})} />
-      </div>
-      
+      <button
+        className="bg-[#008000] hover:bg-green-700 text-white font-medium p-3 rounded shadow-md w-full md:w-auto lg:w-1/2"
+        type="submit"
+      >
+        Add Item
+      </button>
+    </form>
 
-      <table className="w-full mt-6  rounded border-gray-400">
-        <thead className="bg-gray-300">
-          <th className="border p-2">Transaction ID</th>
-          <th className="border p-2">Item</th>
-          <th className="border p-2">Quantity</th>
-          <th className="border p-2">Status</th>
-          <th className="border p-2">Date</th>
+    <h2 className="text-[#F1F2F4] text-2xl sm:text-3xl lg:text-4xl font-semibold border-l-4 rounded border-[#008000] mt-7 pl-2">
+        Filters
+      </h2>
+
+    <div className="mt-6 bg-[rgb(30,34,41)] p-4 sm:p-6 rounded flex flex-col md:flex-row gap-4 border border-gray-600 w-full md:w-2/3 lg:w-1/2">
+      <select
+        value={filters.asset_id}
+        className="bg-[#0F1319] text-[#F1F2F4] p-3 rounded shadow-md w-full"
+        onChange={(e) => setFilters({ ...filters, asset_id: e.target.value })}
+      >
+        <option value="">Select Assets</option>
+        {assetsData?.map((asset) => (
+          <option key={asset.asset_id} value={asset.asset_id}>
+            {asset.asset_name}
+          </option>
+        ))}
+      </select>
+
+      <input
+        type="date"
+        value={filters.date}
+        className="bg-[#0F1319] text-[#F1F2F4] p-3 rounded shadow-md w-full"
+        onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+      />
+    </div>
+
+    <h2 className="text-[#F1F2F4] text-xl sm:text-2xl lg:text-3xl font-bold mt-10 mb-3 pl-5 border-l-4 border-[#008000] rounded">
+      Transactions
+    </h2>
+
+    <div className="mt-6 overflow-x-auto border border-gray-600 rounded bg-[rgb(30,34,41)]">
+      <table className="w-full text-left">
+        <thead className="text-sm sm:text-base lg:text-lg text-[#F1F2F4] bg-[#0F1319]">
+          <tr>
+            <th className="border-t-2 border-gray-700 p-2">Transaction ID</th>
+            <th className="border-t-2 border-gray-700 p-2">Item</th>
+            <th className="border-t-2 border-gray-700 p-2">Quantity</th>
+            <th className="border-t-2 border-gray-700 p-2">Status</th>
+            <th className="border-t-2 border-gray-700 p-2">Date</th>
+          </tr>
         </thead>
-        <tbody className="bg-white">
+        <tbody className="text-sm sm:text-base lg:text-lg text-white">
           {transactionData?.map((data) => {
-
-            const asset_name = assetsData.find((a)=> a.asset_id === data.asset_id);
-            return(
-            <tr key={data.transaction_id}>
-              <td className="border p-2">{data.transaction_id}</td>
-              <td className="border p-2">{asset_name ? asset_name.asset_name : data.asset_id}</td>
-              <td className="border p-2">{data.quantity}</td>
-              <td className="border p-2">{data.status}</td>
-              <td className="border p-2">{data.date}</td>
-            </tr>
-            )
+            const asset_name = assetsData.find((a) => a.asset_id === data.asset_id);
+            return (
+              <tr key={data.transaction_id}>
+                <td className="border-t-2 border-gray-700 p-2">{data.transaction_id}</td>
+                <td className="border-t-2 border-gray-700 p-2">
+                  {asset_name ? asset_name.asset_name : data.asset_id}
+                </td>
+                <td className="border-t-2 border-gray-700 p-2">{data.quantity}</td>
+                <td className="border-t-2 border-gray-700 p-2">{data.status}</td>
+                <td className="border-t-2 border-gray-700 p-2">{data.date}</td>
+              </tr>
+            );
           })}
         </tbody>
       </table>
     </div>
-  );
+  </div>
+);
+
 }
 
 export default BaseCommanderPurchases;

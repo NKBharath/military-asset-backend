@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+option{
+    @apply truncate;
+}
