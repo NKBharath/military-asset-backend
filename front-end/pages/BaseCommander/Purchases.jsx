@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addAdminAsset, getAssetData, getBaseData, getPurchaseData } from "../../controller/BaseCommanderDashboard";
 import { useEffect } from "react";
+import toast from "react-hot-toast";
 
 function BaseCommanderPurchases() {
    const [basesData, setBasesData] = useState([]);
@@ -55,7 +56,7 @@ function BaseCommanderPurchases() {
       try{
         const response = await addAdminAsset(formdata);
         if(response?.success){
-          alert("Asset added successfully");
+          toast.success("Asset added successfully");
           //need to set after checkauth completed window.location.reload();
           setAsset(null);
           setBase(null);

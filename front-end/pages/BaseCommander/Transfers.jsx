@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { assetTransfer, getAssetData, getBaseData, getTransactions } from "../../controller/BaseCommanderDashboard";
 import { useEffect } from "react";
+import toast from "react-hot-toast";
 
 function BaseCommanderTransfers() {
      const [assetdata, setAssetData] = useState([]);
@@ -46,9 +47,9 @@ function BaseCommanderTransfers() {
     }
     const response = await assetTransfer(payload);
     if(response?.success){
-      alert("Asset transferred successfully!");
+      toast.success("Asset transferred successfully!");
     }else{
-      alert("Error transferring asset", response?.message);
+      toast.error("Error transferring asset", response?.message);
     }
   }
   useEffect(()=>{

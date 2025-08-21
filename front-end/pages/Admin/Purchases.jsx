@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAssetData, getBaseData, addAdminAsset } from "../../controller/AdminDashboardController";
 import { getPurchaseData } from "../../controller/AdminPurchase";
+import toast from "react-hot-toast";
 
 const AdminPurchases = () => {
   const [basesData, setBasesData] = useState([]);
@@ -47,7 +48,7 @@ const AdminPurchases = () => {
     try {
       const response = await addAdminAsset(formdata);
       if (response?.success) {
-        alert("Asset added successfully");
+        toast.success("Asset added successfully");
         setAsset(null);
         setBase(null);
         setQuantity(null);

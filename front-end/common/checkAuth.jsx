@@ -13,7 +13,7 @@ const CheckAuth = ({isAuthenticated, user, children}) => {
     if(isAuthenticated && location.pathname.includes("/login")) {
         if(user.role === "admin"){
             return <Navigate to="/admindashboard/home" />;
-        } else if(user.role === "base_commander") {
+        } else if(user.role === "base commander") {
             return <Navigate to="/basecommanderdashboard/home" />;
         }
     }

@@ -18,7 +18,7 @@ function AdminDashboardLayout() {
           {isSidebarOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
         <NavLink
-          to="/login"
+          to="/login/adminlogin"
           className="hidden md:block absolute right-5 top-5 text-white font-medium"
         >
           Logout

@@ -5,6 +5,7 @@ const initialState = {
     isLoading: false,
     user: null,
     token: null,
+    rehydrated: false,
 }
 export const adminlogin = createAsyncThunk('auth/adminlogin',
     async(formdata)=>{
@@ -47,7 +48,18 @@ export const baseCommanderLogin = createAsyncThunk('auth/baseCommanderLogin',
 const authslice = createSlice({
     name: 'auth',
     initialState,
-    reducers:{},
+    reducers:{
+        loadUserFromStorage: (state) => {
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        if (token && user) {
+            state.isAuthenticated = true;
+            state.token = token;
+            state.user = JSON.parse(user);
+        }
+        state.rehydrated = true;
+    },
+    },
     extraReducers: (builder) =>{
         builder
             .addCase(adminlogin.pending, (state) => {
@@ -58,6 +70,7 @@ const authslice = createSlice({
                 state.isAuthenticated = true;
                 state.user = action.payload.user;
                 state.token = action.payload.token;
+
             })
             .addCase(adminlogin.rejected, (state) => {
                 state.isLoading = false;
@@ -81,4 +94,6 @@ const authslice = createSlice({
     }
 })
 
+
+export const {loadUserFromStorage} = authslice.actions;
 export default authslice.reducer;

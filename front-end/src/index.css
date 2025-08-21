@@ -3,3 +3,7 @@
 option{
     @apply truncate;
 }
+
+body{
+    background-color: #0F1319;
+}

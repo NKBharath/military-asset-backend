@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getAssetData, getBaseData } from "../../controller/AdminDashboardController";
 import { assetTransfer, getTransactions } from "../../controller/AdminPurchase";
+import toast from "react-hot-toast";
 
 const AdminTransfers = () => {
   const [assetdata, setAssetData] = useState([]);
@@ -49,9 +50,9 @@ const AdminTransfers = () => {
     };
     const response = await assetTransfer(payload);
     if (response?.success) {
-      alert("Asset transferred successfully!");
+      toast.success("Asset transferred successfully!");
     } else {
-      alert("Error transferring asset", response?.message);
+      toast.error("Error transferring asset", response?.message);
     }
   };
 
