@@ -18,6 +18,7 @@ function App() {
  
   return (
     <Routes>
+      // --- landing pages ---
       <Route path="/login" element={<Loginlayout />}>
         <Route path="adminlogin" element={<AdminLogin />} />
         <Route path="basecommanderlogin" element={<BaseCommanderLogin/>}/>

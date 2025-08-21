@@ -1,24 +1,29 @@
 import { useEffect, useState } from "react";
-import { getBaseCommanderDashboard } from "../../controller/BaseCommanderDashboard";
+import { getAssetData, getBaseCommanderDashboard, getBaseData, getPurchaseData, getTransactions } from "../../controller/BaseCommanderDashboard";
 import { useSelector } from "react-redux";
 
 function BaseCommanderDashboard() {
   const [filters, setFilters] = useState({
-    transaction_date: "",
-    category: "",
+    date: "",
+    asset_id: "",
   });
-  const [DashboardData, setDashboardData] = useState([]);
+  const [dashboardData, setdashboardData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useSelector((state) => state.auth);
-  console.log("User Base:", user.base);
+  const [purchaseData, setPurchaseData] = useState([]);
+  const [transactionData, setTransactionData] = useState([]);
+  const [assetsData, setAssetsData] = useState([]);
+  const [basesData, setBasesData] = useState([]);
   const getDashboardData = async () => {
     setLoading(true);
     try {
-      const data = await getBaseCommanderDashboard(filters,user.base);
-      console.log("Fetched Dashboard Data:", data.data);
+      const params = {
+        asset_id: filters.asset_id,
+        date: filters.date
+      };
+      const data = await getBaseCommanderDashboard(params);
       if (data?.success) {
-        setDashboardData(data.data);
-        console.log("Dashboard data fetched successfully");
+        setdashboardData(data.data);
+        setLoading(false);
       } else {
         console.error("Error fetching dashboard data:", data?.message);
       }
@@ -33,83 +38,154 @@ function BaseCommanderDashboard() {
     getDashboardData();
   }, [filters]);
 
-  const handleChange = (event) => {
-    setFilters({ ...filters, [event.target.name]: event.target.value });
-  };
-
-  // Stats
-  const totalAssets = DashboardData.length;
-  const purchases = DashboardData.filter((a) => a.action === "purchase").length;
-  const transferIn = DashboardData.filter((a) => a.action === "transfer_in").length;
-  const transferOut = DashboardData.filter((a) => a.action === "transfer_out").length;
-  const netMovement = purchases + transferIn - transferOut;
-  const assignedAssets = DashboardData.filter((a) => a.status === "assigned").length;
-  const expendedAssets = DashboardData.filter((a) => a.status === "expended").length;
+  useEffect(()=>{
+        const fetchpurchaseData = async () =>{
+          const params = {
+            asset_id: filters.asset_id,
+            date: filters.date
+          }
+          const data = await getPurchaseData(params);
+          if(data?.success){
+            setPurchaseData(data.data);
+          } else {
+            console.error("Error fetching purchases:", data?.message);
+          }
+        }
+        fetchpurchaseData();
+      }, [filters]);
+    useEffect(()=>{
+          const fetchAssetData = async () => {
+            const data = await getAssetData();
+            if (data?.success) {
+              setAssetsData(data.data);
+            } else {
+              console.error("Error fetching assets data:", data?.message);
+            }
+          };
+      
+          fetchAssetData();
+        }, [])
+      
+    useEffect(()=>{
+          const fetchBaseData = async () => {
+            const data = await getBaseData();
+            if(data?.success){
+              setBasesData(data.data);
+            } else {
+              console.error("Error fetching base data:", data?.message);
+            }
+          };
+      
+          fetchBaseData();
+        }, []);
+      
+     useEffect(()=>{
+      const fetchTransactionData = async () =>{
+        const params = {
+          asset_id: filters.asset_id,
+          base_id: filters.base_id,
+          date: filters.date
+        }
+        const data = await getTransactions(params);
+        if(data?.success){
+          setTransactionData(data.data);
+        } else {
+          console.error("Error fetching transactions:", data?.message);
+        }
+      }
+      fetchTransactionData();
+    }, [filters]);
+  
+    const totalAssets = dashboardData.length;
+    const purchases = purchaseData.length;
+    const assignedAssets = 0;
+    const expendedAssets = 0;
+    const transferIn = transactionData.filter(a => a.status === "transfer-in").length;
+    const transferOut = transactionData.filter(a => (a.status === "transfer-out")).length;
+    const netMovement = (purchases + transferIn)-transferOut;
 
   return (
     <div className="p-6 space-y-6 bg-[#D7D176]">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 p-4 rounded-lg">
-        <div className="flex gap-3 items-center">
-          <label className="block font-semibold mb-1">Date:</label>
-          <input
-            type="date"
-            name="transaction_date"
-            value={filters.transaction_date}
-            onChange={handleChange}
-            className="border-2 border-black p-2 rounded w-40"
-          />
-        </div>
-
-        <select
-          name="category"
-          value={filters.category}
-          onChange={handleChange}
-          className="border-2 border-black p-2 rounded w-40"
-        >
-          <option value="">Equipment Type</option>
-          <option value="Weapon">Weapon</option>
-          <option value="Vehicle">Vehicle</option>
-          <option value="Communication">Communication</option>
+      <div className="mt-6 bg-[#D7D176] p-4 rounded space-x-5">
+        <select value={filters.asset_id} className="bg-[#ffffff] p-2 font-bold rounded "
+        onChange={(e)=> setFilters({...filters, asset_id:e.target.value})}>
+          <option value="">Select Assets</option>
+          {assetsData?.map(asset=>(
+            <option key={asset.asset_id} value={asset.asset_id}>
+              {asset.asset_name}
+            </option>
+          ))}
         </select>
 
-        <button
-          onClick={getDashboardData}
-          className="bg-black text-white px-4 py-2 rounded"
-        >
-          Apply Filters
-        </button>
+        <input type="date" value={filters.date} className="bg-[#ffffff] p-2 font-bold rounded "
+        onChange={(e)=> setFilters({...filters, date:e.target.value})} />
       </div>
 
-      {/* Dashboard Data */}
       {loading ? (
         <p className="mt-4">Loading...</p>
       ) : totalAssets > 0 ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="p-4 border rounded shadow">
-            <h2 className="font-semibold">Opening Balance</h2>
-            <p>{totalAssets}</p>
+        <>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Total Assets</h2>
+              <p>{totalAssets}</p>
+            </div>
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Net Movement</h2>
+              <p>{netMovement}</p>
+            </div>
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Purchases</h2>
+              <p>{purchases}</p>
+            </div>
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Assigned</h2>
+              <p>{assignedAssets}</p>
+            </div>
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Expended</h2>
+              <p>{expendedAssets}</p>
+            </div>
+            <div className="p-4 border rounded shadow bg-white">
+              <h2 className="font-semibold">Transfers</h2>
+              <p>In: {transferIn} | Out: {transferOut}</p>
+            </div>
           </div>
-          <div className="p-4 border rounded shadow">
-            <h2 className="font-semibold">Closing Balance</h2>
-            <p>{totalAssets}</p>
-          </div>
-          <div className="p-4 border rounded shadow">
-            <h2 className="font-semibold">Net Movement</h2>
-            <p>Total: {netMovement}</p>
-            <p>Purchases: {purchases}</p>
-            <p>Transfer In: {transferIn}</p>
-            <p>Transfer Out: {transferOut}</p>
-          </div>
-          <div className="p-4 border rounded shadow">
-            <h2 className="font-semibold">Assigned Assets</h2>
-            <p>{assignedAssets}</p>
-          </div>
-          <div className="p-4 border rounded shadow">
-            <h2 className="font-semibold">Expended Assets</h2>
-            <p>{expendedAssets}</p>
-          </div>
-        </div>
+
+          <div className="mt-8">
+            <h2 className="font-bold text-lg mb-4">Detailed Breakdown</h2>
+              <table className="w-full mt-6  rounded border-gray-400">
+                <thead className="bg-gray-300">
+                  <th className="border p-2">Transaction ID</th>
+                  <th className="border p-2">Item</th>
+                  <th className="border p-2">Base</th>
+                  <th className="border p-2">Quantity</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Date</th>
+                </thead>
+                <tbody className="bg-white">
+                  {[...(transactionData || []), ...(purchaseData || [])]
+                    .sort((a, b) => a.transaction_id - b.transaction_id)
+                    .map((data) => {
+                      const asset_name = assetsData.find((a) => a.asset_id === data.asset_id);
+                      const base_name = basesData.find((b) => b.base_id === data.base_id);
+                    
+                      return (
+                        <tr key={data.transaction_id}>
+                          <td className="border p-2">{data.transaction_id}</td>
+                          <td className="border p-2">{asset_name ? asset_name.asset_name : data.asset_id}</td>
+                          <td className="border p-2">{base_name ? base_name.base_name : data.base_id}</td>
+                          <td className="border p-2">{data.quantity}</td>
+                          <td className="border p-2">{data.status}</td>
+                          <td className="border p-2">{data.date}</td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+
+              </table>
+            </div>
+       </>
       ) : (
         <p className="mt-4">No data found</p>
       )}

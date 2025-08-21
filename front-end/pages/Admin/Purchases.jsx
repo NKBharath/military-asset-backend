@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAssetData, getBaseData } from "../../controller/AdminDashboardController";
 import { addAdminAsset } from "../../controller/AdminDashboardController";
-import { getTransactions } from "../../controller/AdminPurchase";
+import { getPurchaseData, getTransactions } from "../../controller/AdminPurchase";
 const AdminPurchases = () => {
   const [basesData, setBasesData] = useState([]);
   const [base, setBase] = useState(null);
@@ -78,11 +78,9 @@ const AdminPurchases = () => {
           asset_id: filters.asset_id,
           date: filters.date
         }
-        const data = await getTransactions(params);
+        const data = await getPurchaseData(params);
         if(data?.success){
           setTransactionData(data.data);
-
-          console.log("Transaction Data:", data.data);
         } else {
           console.error("Error fetching transactions:", data?.message);
         }
@@ -90,7 +88,7 @@ const AdminPurchases = () => {
       fetchTransactionData();
     }, [filters]);
   return (
-    <div className="p-6 ">
+    <div className="p-6 ml-35 ">
       <h2 className="text-xl font-bold mb-4">Add Asset</h2>
       {message && <p className="text-red-500">{message}</p>}
       <form  onSubmit={handlesubmit} className="space-x-5 bg-[#D7D176] rounded p-4">
@@ -118,6 +116,9 @@ const AdminPurchases = () => {
          <button className="bg-[#ffffff] p-2 font-bold rounded "
          type="submit">Add Item</button>
       </form>
+
+
+      
       <div className="mt-6 bg-[#D7D176] p-4 rounded space-x-5">
           <select value={filters.base_id} className="bg-[#ffffff] p-2 font-bold rounded "
           onChange={(e)=> setFilters({...filters, base_id: e.target.value})}>

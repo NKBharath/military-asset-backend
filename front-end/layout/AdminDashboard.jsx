@@ -3,8 +3,8 @@ import { NavLink, Outlet } from "react-router-dom";
 function AdminDashboardLayout() {
 
   return (
-    <div className="bg-[#a18b32] h-screen fixed left-0 w-screen">
-      <div className="bg-[#132F18] text-white font-bold text-2xl text-center fixed top-0 left-0 w-full p-5 h-20">
+    <div className="bg-[#a18b32] min-h-screen left-0 w-screen">
+      <div className="bg-[#132F18] text-white font-bold text-2xl text-center  fixed top-0 left-0 w-full p-5 h-20">
         Military Asset Managment
         <NavLink
           to="/login"
@@ -47,7 +47,7 @@ function AdminDashboardLayout() {
         </NavLink>
       </div>
 
-      <div className="ml-[16.7%] mt-20 p-3 flex flex-col gap-2">
+      <div className="ml-30 mt-20  h-full flex flex-col gap-2">
         <Outlet />
       </div>
     </div>

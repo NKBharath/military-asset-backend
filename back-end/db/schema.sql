@@ -33,6 +33,7 @@ create table if not exists transactions(
     transaction_id integer primary key autoincrement,
     asset_id integer not null,
     base_id integer not null,
+    base_to_id integer ,
     quantity integer not null,
     status text check(status in ('purchase', 'transfer-in', 'transfer-out')),
     date timestamp default current_timestamp,

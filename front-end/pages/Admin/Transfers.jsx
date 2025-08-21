@@ -1,113 +1,135 @@
-import React, { useState } from "react";
-import axios from "axios";
-import API from "../../common/axiosInstance";
-// Example asset list, you can fetch this from your backend if dynamic
-const assets = [
-  { asset_id: 1, asset_name: "Rifle" },
-  { asset_id: 2, asset_name: "Jeep" },
-  { asset_id: 3, asset_name: "Laptop" },
-  { asset_id: 4, asset_name: "Rifle" },
-  { asset_id: 5, asset_name: "Tank" },
-  { asset_id: 7, asset_name: "Pistol" },
-  { asset_id: 8, asset_name: "Truck" },
-  { asset_id: 10, asset_name: "Missile" },
-  { asset_id: 11, asset_name: "Jeep" },
-  { asset_id: 6, asset_name: "Drone" },
-  { asset_id: 9, asset_name: "Radar" },
-  { asset_id: 12, asset_name: "Satellite" },
-  { asset_id: 17, asset_name: "Jeep X2" },
-  { asset_id: 18, asset_name: "Drone D2" },
-];
-
+import React, { useEffect, useState } from "react";
+import { getAssetData, getBaseData } from "../../controller/AdminDashboardController";
+import { assetTransfer, getTransactions } from "../../controller/AdminPurchase";
 const AdminTransfers = () => {
-  const [assetId, setAssetId] = useState("");
-  const [assetName, setAssetName] = useState("");
-  const [fromBase, setFromBase] = useState("");
-  const [toBase, setToBase] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [message, setMessage] = useState("");
+  
+  const [assetdata, setAssetData] = useState([]);
+  const [basedata, setBaseData] = useState([]);
+  const [transferData, setTransferData] = useState({
+    asset_id: "",
+    base_id: "",
+    other_base_id : "",
+    quantity: 0,
+    status: ""
+  });
+  const [transactionData, setTransactionData] = useState([]);
 
-  const handleAssetChange = (e) => {
-    const selectedAssetName = e.target.value;
-    setAssetName(selectedAssetName);
-
-    const asset = assets.find((a) => a.asset_name === selectedAssetName);
-    setAssetId(asset ? asset.asset_id : "");
-  };
-
-  const handleTransfer = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await API.post("/admin/transfer", {
-        asset_id: assetId,
-        from_base_id: fromBase,
-        to_base_id: toBase,
-        quantity: parseInt(quantity),
-      });
-      setMessage(res.data.message);
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error occurred");
+  useEffect(()=>{
+    const fetchAssetData = async () =>{
+      const data = await getAssetData();
+      if(data?.success){
+        setAssetData(data?.data);
+      } else{
+        console.error("Error fetching asset data:", data?.message);
+      }
     }
-  };
+    fetchAssetData();
+  },[])
 
+  useEffect(()=>{
+    const fetchBaseData = async () =>{
+      const data = await getBaseData();
+      if(data?.success){
+        setBaseData(data?.data);
+      } else{
+        console.error("Error fetching base data:", data?.message);
+      }
+    }
+    fetchBaseData();
+  },[])
+  const assetTransferdata = async (data) =>{
+    data.preventDefault();
+    const payload = {
+      asset_id: transferData.asset_id,
+      base_id: transferData.base_id,
+      other_base_id: transferData.other_base_id,
+      quantity: transferData.quantity,
+      status: transferData.status
+    }
+    const response = await assetTransfer(payload);
+    if(response?.success){
+      alert("Asset transferred successfully!");
+    }else{
+      alert("Error transferring asset", response?.message);
+    }
+  }
+  useEffect(()=>{
+        const fetchTransactionData = async () =>{
+          
+          const data = await getTransactions();
+          if(data?.success){
+            setTransactionData(data.data);
+          } else {
+            console.error("Error fetching transactions:", data?.message);
+          }
+        }
+        fetchTransactionData();
+      }, []);
   return (
-    <div className="p-4 max-w-md mx-auto bg-white shadow-lg rounded-xl">
-      <h2 className="text-xl font-bold mb-4">Transfer Asset</h2>
-      <form onSubmit={handleTransfer} className="flex flex-col gap-3">
-        <select
-          value={assetName}
-          onChange={handleAssetChange}
-          className="p-2 border rounded"
-          required
-        >
+    <div className="p-4 mt-3 flex flex-col justify-center items-center ml-38 mr-10">
+      <h2 className="text-xl text-center font-bold mb-4">Transfer Asset</h2>
+      <form onSubmit={assetTransferdata} className="
+       flex flex-col gap-2 max-w-max bg-[#D7D176] rounded p-2 gap-y-3 ">
+        <select className="bg-white p-2 font-semibold rounded" 
+        value ={transferData.asset_id} onChange={(e)=>setTransferData({...transferData, asset_id: e.target.value})}>
           <option value="">Select Asset</option>
-          {assets.map((asset) => (
-            <option key={asset.asset_id} value={asset.asset_name}>
-              {asset.asset_name}
-            </option>
+          {assetdata.map(asset=>(
+            <option key={asset.asset_id} value={asset.asset_id}>{asset.asset_name}</option>
           ))}
         </select>
+        <select className="bg-white p-2 font-semibold rounded" 
+        value={transferData.base_id} onChange={(e)=>setTransferData({...transferData, base_id: e.target.value})}>
+          <option value="">Select Your Base</option>
+          {basedata?.map(base =>(
+            <option key={base.base_id} value={base.base_id}>{base.base_name}</option>
+          ))}
+        </select>
+        <select className="bg-white p-2 font-semibold rounded" 
+        value={transferData.other_base_id} onChange={(e)=>setTransferData({...transferData, other_base_id: e.target.value})}>
+          <option value="">Select Other Base</option>
+          {basedata?.map(base =>(
+            <option key={base.base_id} value={base.base_id}>{base.base_name}</option>
+          ))}
+        </select>
+        <input className="bg-white p-2 font-semibold rounded" 
+         type="number" value={transferData.quantity} placeholder="Enter Quantity"
+        onChange={(e)=>setTransferData({...transferData, quantity: e.target.value})} />
 
-        <input
-          type="text"
-          placeholder="Asset ID"
-          value={assetId}
-          readOnly
-          className="p-2 border rounded bg-gray-100"
-        />
-
-        <input
-          type="text"
-          placeholder="From Base ID"
-          value={fromBase}
-          onChange={(e) => setFromBase(e.target.value)}
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          placeholder="To Base ID"
-          value={toBase}
-          onChange={(e) => setToBase(e.target.value)}
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="p-2 border rounded"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Transfer
-        </button>
+        <select className="bg-white p-2 font-semibold rounded"
+        value={transferData.status} onChange={(e)=>setTransferData({...transferData, status: e.target.value})}>
+          <option value="">Select Status</option>
+          <option value="transfer-in">Transfer In</option>
+          <option value="transfer-out">Transfer Out</option>
+        </select>
+        <button type="submit" className="border p-2 rounded font-semibold text-center">Transfer</button>
       </form>
-      {message && <p className="mt-3 text-center text-red-500">{message}</p>}
+      <table className="w-full mt-6  rounded border-gray-400">
+        <thead className="bg-gray-300">
+          <th className="border p-2">Transaction ID</th>
+          <th className="border p-2">Item</th>
+          <th className="border p-2">Base</th>
+          <th className="border p-2">Quantity</th>
+          <th className="border p-2">Status</th>
+          <th className="border p-2">Date</th>
+        </thead>
+        <tbody className="bg-white">
+          {transactionData?.map((data) => {
+
+            const asset_name = assetdata.find((a)=> a.asset_id === data.asset_id);
+            const base_name = basedata.find((b)=> b.base_id === data.base_id);
+            return(
+            <tr key={data.transaction_id}>
+              <td className="border p-2">{data.transaction_id}</td>
+              <td className="border p-2">{asset_name ? asset_name.asset_name : data.asset_id}</td>
+              <td className="border p-2">{base_name ? base_name.base_name : data.base_id}</td>
+              <td className="border p-2">{data.quantity}</td>
+              <td className="border p-2">{data.status}</td>
+              <td className="border p-2">{data.date}</td>
+            </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

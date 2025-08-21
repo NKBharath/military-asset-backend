@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../../config/db");
 const jwt = require('jsonwebtoken');
-const { AssetStorageTrigger } = require("../Common-Service/service");
+const { AssetStorageTrigger, TransferStorageTrigger } = require("../Common-Service/service");
 
 const generatetoken = (id) =>{
     return jwt.sign({id: id, role: "admin"}, "secret123", {expiresIn: "1h"});
@@ -41,17 +41,20 @@ const loginAdmin = async (req, res) =>{
 
 const getAdminDashboard = async (req, res) => {
   try {
-    const sql = "SELECT * FROM asset_storage"
-    db.all(sql, async (error, result) => {
-      if (error) {
-        console.error("DB Error", error);
-        return res.status(500).json({ message: "Internal Server Error" });
-      }
-      return res.json({
-        success: true,
-        data: result,
-      });
-    });
+    let { asset_id,  date} = req.query;
+    asset_id = asset_id || null;
+    date = date ? `${date}%` : null;
+    const base_id = req.user.id;
+   db.all(`SELECT * FROM asset_storage WHERE (? is NULL OR base_id = ?) AND (? is NULL OR asset_id = ?)`, [base_id, base_id, asset_id, asset_id ], (error, result) => {
+     if (error) {
+       console.error("DB Error", error);
+       return res.status(500).json({ message: "Internal Server Error" });
+     }
+     return res.json({
+       success: true,
+       data: result,
+     });
+   });
 
   } catch (error) {
     console.error("Error in getAdminDashboard:", error);
@@ -62,6 +65,7 @@ const getAdminDashboard = async (req, res) => {
     });
   }
 };
+
 
 const getAssetsData = async(req, res) => {
   try{
@@ -141,8 +145,8 @@ const fetchTransactions = async (req, res) =>{
     base_id = base_id || null;
     asset_id = asset_id || null;
     date = date ? `${date}%` : null;
-    const sql = `SELECT * FROM transactions WHERE (? is NULL OR base_id = ?) AND (? is NULL OR asset_id = ?) AND (? is NULL OR date LIKE ?)`;
-    db.all(sql, [base_id, base_id, asset_id, asset_id, date, date], (error, row)=>{
+    const sql = `SELECT * FROM transactions WHERE (? is NULL OR base_id = ?) AND (? is NULL OR asset_id = ?) AND (? is NULL OR date LIKE ?) AND (status != ?)`;
+    db.all(sql, [base_id, base_id, asset_id, asset_id, date, date, 'purchase'], (error, row)=>{
       if(error){
         console.log("DB Error", error);
         return res.status(500).json({ message: "Internal Server Error" });
@@ -163,79 +167,50 @@ const fetchTransactions = async (req, res) =>{
     });
   }
 }
+
+const fetchPurchaseData = async (req, res) =>{
+  try{
+    let {base_id, asset_id, date} = req.query;
+    base_id = base_id || null;
+    asset_id = asset_id || null;
+    date = date ? `${date}%` : null;
+    const sql = `SELECT * FROM transactions WHERE (? is NULL OR base_id = ?) AND (? is NULL OR asset_id = ?) AND (? is NULL OR date LIKE ?) AND (status = ?)`;
+    db.all(sql, [base_id, base_id, asset_id, asset_id, date, date, 'purchase'], (error, row)=>{
+      if(error){
+        console.log("DB Error", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+
+      }
+      res.status(200).json({
+        success: true,
+        data: row,
+        message: "Transactions fetched successfully"
+      })
+    })
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching transactions",
+      error: error.message
+    });
+  }
+}
+
 const transferAsset = async (req, res) => {
   try {
-    const { asset_id, from_base_id, to_base_id, quantity } = req.body;
-
-    // 1. Validate available quantity from source base
-    const sourceAsset = await pool.query(
-      `SELECT available_quantity 
-       FROM assets 
-       WHERE asset_id = $1 AND base_id = $2`,
-      [asset_id, from_base_id]
-    );
-
-    if (sourceAsset.rows.length === 0) {
-      return res.status(404).json({ message: "Asset not found in source base" });
-    }
-
-    if (sourceAsset.rows[0].available_quantity < quantity) {
-      return res.status(400).json({ message: "Insufficient available quantity for transfer" });
-    }
-
-    // Begin transaction
-    await pool.query("BEGIN");
-
-    // 2. Deduct from source base
-    await pool.query(
-      `UPDATE assets 
-       SET available_quantity = available_quantity - $1 
-       WHERE asset_id = $2 AND base_id = $3`,
-      [quantity, asset_id, from_base_id]
-    );
-
-    await pool.query(
-      `INSERT INTO transactions (asset_id, action, quantity, transaction_date) 
-       VALUES ($1, $2, $3, NOW())`,
-      [asset_id, "transfer_out", quantity]
-    );
-
-    // 3. Add to destination base
-    // Check if asset already exists in destination base
-    const destAsset = await pool.query(
-      `SELECT asset_id FROM assets WHERE asset_id = $1 AND base_id = $2`,
-      [asset_id, to_base_id]
-    );
-
-    if (destAsset.rows.length > 0) {
-      // If asset already exists in destination base → update
-      await pool.query(
-        `UPDATE assets 
-         SET available_quantity = available_quantity + $1, total_quantity = total_quantity + $1
-         WHERE asset_id = $2 AND base_id = $3`,
-        [quantity, asset_id, to_base_id]
-      );
-    } else {
-      // If not, insert new entry in assets for destination base
-      await pool.query(
-        `INSERT INTO assets (asset_id, base_id, asset_name, category, total_quantity, available_quantity, assigned_quantity) 
-         SELECT asset_id, $2, asset_name, category, $3, $3, 0
-         FROM assets WHERE asset_id = $1 AND base_id = $4`,
-        [asset_id, to_base_id, quantity, from_base_id]
-      );
-    }
-
-    await pool.query(
-      `INSERT INTO transactions (asset_id, action, quantity, transaction_date) 
-       VALUES ($1, $2, $3, NOW())`,
-      [asset_id, "transfer_in", quantity]
-    );
-
-    // Commit transaction
-    await pool.query("COMMIT");
-
-    res.json({ message: "Asset transferred successfully" });
-
+    const { asset_id, base_id, other_base_id, quantity, status } = req.body;
+    const sql = `INSERT INTO transactions (asset_id, base_id, other_base_id, quantity, status) VALUES (? , ?, ?, ?, ?);`
+    const params = [asset_id, base_id, other_base_id, quantity, status];
+    db.run(sql, params, (error)=>{
+      if(error){
+        console.error("DB Error", error);
+        return res.status(500).json({message: "Internal Server Error"});
+      } else{
+        TransferStorageTrigger(asset_id, base_id, other_base_id, quantity, status);
+      }
+      return res.status(201).json({message: "Asset added successfully", success: true});
+    })
   } catch (err) {
     await pool.query("ROLLBACK");
     console.error(err);
@@ -245,4 +220,4 @@ const transferAsset = async (req, res) => {
 
 
 
-module.exports = {loginAdmin, getAdminDashboard, getAssetsData, getBaseData, setAdminAssets, fetchTransactions, transferAsset}
+module.exports = {loginAdmin, getAdminDashboard, getAssetsData, getBaseData, setAdminAssets, fetchTransactions, fetchPurchaseData, transferAsset}

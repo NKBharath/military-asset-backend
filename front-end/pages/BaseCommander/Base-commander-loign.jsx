@@ -17,6 +17,7 @@ function BaseCommanderLogin() {
         dispatch(baseCommanderLogin(formdata)).then((data)=>{
             if(data?.payload?.success){
                 alert("Login successful!");
+                console.log("User Data:", data?.payload?.data);
                 navigate("/basecommanderdashboard/home");
             }else{
                 console.log(data?.payload?.message);
